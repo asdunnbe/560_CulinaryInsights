@@ -15,4 +15,4 @@ There are various similar services available over the internet. Dishgen is an ex
 ## Resources
 Proposal: https://docs.google.com/document/d/1dA33eLEttFG9Zmm56IVPbUk9Y22I5JyXaWXp0SLcj1I/edit?usp=sharing
 
-Midterm Presentatio: https://docs.google.com/presentation/d/1P8tGykr0pQpFsyI_9GQ8aNjcUgMBIS8tBShblCRrTUA/edit?usp=sharing
+Midterm Presentation: https://docs.google.com/presentation/d/1P8tGykr0pQpFsyI_9GQ8aNjcUgMBIS8tBShblCRrTUA/edit?usp=sharing
