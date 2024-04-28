@@ -90,6 +90,37 @@ def generate_output(name, ingredients, steps):
     return full_text
 
 
+def generate_output(name, ingredients, steps):
+    # Sentence Components
+    titles = [
+        f"Today, we're making {name}. ", 
+        f"Get ready to cook {name}. ", 
+    ]
+    ingredient_intros = [
+        "The ingredients you'll need are: ", 
+        "You will need the following items: ",
+        "Make sure you have all these ingredients: "
+    ]
+    conclusions = [
+        f"Yum!",
+        "Enjoy your meal!",
+        "That's all it takes to make this fabulous dish!"
+    ]
+
+    # Select random elements
+    title = random.choice(titles)
+    ing_intro = random.choice(ingredient_intros)
+    conclusion = random.choice(conclusions)
+
+    # Generate ingredients list
+    ingredients_text = ing_intro + ", ".join(ingredients) + "."
+
+    # Assemble the full text
+    full_text = f"{title}{ingredients_text}{conclusion}"
+    
+    return full_text
+
+
 def combine_input_output(name, ingredients, steps):
     input = generate_input(ingredients)
     output = generate_output(name, ingredients, steps)

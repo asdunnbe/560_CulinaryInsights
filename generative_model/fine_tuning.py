@@ -8,18 +8,19 @@ def load_dataset(file_path):
     with open(file_path, 'r') as file:
         data_json = json.load(file)
     # Convert list of dicts into dict of lists
+    length = len(data_json)
     data = {key: [dic[key] for dic in data_json] for key in data_json[0]}
-    return Dataset.from_dict(data)
+    return length, Dataset.from_dict(data)
 
 # Tokenize function adapted for handling 'map' correctly
 def tokenize_function(examples):
-    model_inputs = tokenizer(examples['input_text'], padding="max_length", truncation=True, max_length=512)
-    labels = tokenizer(examples['output_text'], padding="max_length", truncation=True, max_length=512)
+    model_inputs = tokenizer(examples['input_text'], padding="max_length", truncation=True, max_length=1024)
+    labels = tokenizer(examples['output_text'], padding="max_length", truncation=True, max_length=1024)
     model_inputs["labels"] = labels["input_ids"]
     return model_inputs
 
 # Load and process the dataset
-dataset = load_dataset('recipe_data/encoded_recipes_full.json')
+length, dataset = load_dataset('recipe_data/encoded_recipes_full.json')
 tokenizer = GPT2Tokenizer.from_pretrained('gpt2')
 if tokenizer.pad_token is None:
     tokenizer.pad_token = tokenizer.eos_token  # Use the eos_token as the pad_token
@@ -27,8 +28,8 @@ tokenized_datasets = dataset.map(tokenize_function, batched=True)
 
 
 # Prepare the data for training by creating train and validation splits
-train_dataset = tokenized_datasets.shuffle(seed=42).select(range(800))  # Adjust the range based on your data size
-eval_dataset = tokenized_datasets.shuffle(seed=42).select(range(800, 1000))  # Adjust the range based on your data size
+train_dataset = tokenized_datasets.shuffle(seed=42).select(range(int(length * 0.8)))  # Adjust the range based on your data size
+eval_dataset = tokenized_datasets.shuffle(seed=42).select(range(int(length * 0.8), length))  # Adjust the range based on your data size
 
 # Setup training arguments
 training_args = TrainingArguments(
@@ -36,7 +37,7 @@ training_args = TrainingArguments(
     evaluation_strategy="epoch",
     learning_rate=2e-5,
     weight_decay=0.01,
-    num_train_epochs=3,
+    num_train_epochs=5,
     per_device_train_batch_size=4,
     per_device_eval_batch_size=4,
     warmup_steps=500,

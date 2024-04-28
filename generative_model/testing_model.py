@@ -11,11 +11,11 @@ model_path = './finetuned_model'  # Adjust path as necessary
 model, tokenizer = load_model(model_path)
 
 # Setup the pipeline for text generation
-text_generator = pipeline('text-generation', model=model, tokenizer=tokenizer, device=-1)  # device=0 for GPU; use device=-1 for CPU
+text_generator = pipeline('text-generation', model=model, tokenizer=tokenizer, device='mps')  # device=0 for GPU; use device=-1 for CPU
 
 # Function to generate text based on a prompt
 def generate_text(prompt, max_length=500):
-    generated_texts = text_generator(prompt, max_length=max_length, num_return_sequences=8)
+    generated_texts = text_generator(prompt, max_length=max_length, num_return_sequences=10)
     return generated_texts[0]['generated_text']
 
 # Example usage
