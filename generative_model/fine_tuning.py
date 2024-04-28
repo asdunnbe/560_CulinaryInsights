@@ -1,44 +1,67 @@
-from transformers import GPT2LMHeadModel, GPT2Tokenizer, Trainer, TrainingArguments
 import torch
+import json
+from datasets import Dataset, DatasetDict
+from transformers import GPT2Tokenizer, GPT2LMHeadModel, Trainer, TrainingArguments
 
-# Load pre-trained model and tokenizer
-model = GPT2LMHeadModel.from_pretrained('gpt2')
+# Function to load dataset from JSON file
+def load_dataset(file_path):
+    with open(file_path, 'r') as file:
+        data_json = json.load(file)
+    # Convert list of dicts into dict of lists
+    data = {key: [dic[key] for dic in data_json] for key in data_json[0]}
+    return Dataset.from_dict(data)
+
+# Tokenize function adapted for handling 'map' correctly
+def tokenize_function(examples):
+    model_inputs = tokenizer(examples['input_text'], padding="max_length", truncation=True, max_length=512)
+    labels = tokenizer(examples['output_text'], padding="max_length", truncation=True, max_length=512)
+    model_inputs["labels"] = labels["input_ids"]
+    return model_inputs
+
+# Load and process the dataset
+dataset = load_dataset('recipe_data/encoded_recipes_full.json')
 tokenizer = GPT2Tokenizer.from_pretrained('gpt2')
+if tokenizer.pad_token is None:
+    tokenizer.pad_token = tokenizer.eos_token  # Use the eos_token as the pad_token
+tokenized_datasets = dataset.map(tokenize_function, batched=True)
 
-# Example of formatting your data
-train_texts = ["chicken, rice, spice | Make a spicy chicken rice."]
-train_encodings = tokenizer(train_texts, truncation=True, padding='max_length', max_length=512)
 
-# Prepare dataset
-class RecipeDataset(torch.utils.data.Dataset):
-    def __init__(self, encodings):
-        self.encodings = encodings
+# Prepare the data for training by creating train and validation splits
+train_dataset = tokenized_datasets.shuffle(seed=42).select(range(800))  # Adjust the range based on your data size
+eval_dataset = tokenized_datasets.shuffle(seed=42).select(range(800, 1000))  # Adjust the range based on your data size
 
-    def __len__(self):
-        return len(self.encodings.input_ids)
-
-    def __getitem__(self, idx):
-        return {key: torch.tensor(val[idx]) for key, val in self.encodings.items()}
-
-train_dataset = RecipeDataset(train_encodings)
-
-# Training arguments
+# Setup training arguments
 training_args = TrainingArguments(
-    output_dir='./results',          # output directory
-    num_train_epochs=3,              # number of training epochs
-    per_device_train_batch_size=4,   # batch size for training
-    warmup_steps=500,                # number of warmup steps for learning rate scheduler
-    weight_decay=0.01,               # strength of weight decay
-    logging_dir='./logs',            # directory for storing logs
-    logging_steps=10,
+    output_dir='./results',
+    evaluation_strategy="epoch",
+    learning_rate=2e-5,
+    weight_decay=0.01,
+    num_train_epochs=3,
+    per_device_train_batch_size=4,
+    per_device_eval_batch_size=4,
+    warmup_steps=500,
+    save_strategy="epoch",
+    load_best_model_at_end=True,
 )
 
-# Initialize Trainer
+# Load model and move to GPU if available
+device =  "mps" if torch.backends.mps.is_available() else "cpu"
+model = GPT2LMHeadModel.from_pretrained('gpt2').to(device)
+
+# Initialize the Trainer
 trainer = Trainer(
     model=model,
     args=training_args,
     train_dataset=train_dataset,
+    eval_dataset=eval_dataset,
+    tokenizer=tokenizer,
 )
 
-# Start training
+# Train the model
 trainer.train()
+
+# Save the model and tokenizer
+model_path = "./finetuned_model"
+model.save_pretrained(model_path)
+tokenizer.save_pretrained(model_path)
+
