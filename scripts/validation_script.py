@@ -48,6 +48,9 @@ print(testing_recs)
 
 '''
 
+generated_steps = 'Model Recipe Steps output for given input'
+preexisting_steps = 'Ground-truth Recipe Steps for the input given to the model'
+
 def rouge_score(generated_steps, preexisting_steps):
     if (isinstance(generated_steps, list) and isinstance(preexisting_steps, list)):
         return rouge.get_score(generated_steps, preexisting_steps, avg=True)
